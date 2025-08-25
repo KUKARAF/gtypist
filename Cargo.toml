@@ -1,0 +1,9 @@
+[package]
+name = "gtypist-freya-gui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+freya = "0.3"
+dioxus = { version = "0.6", features = ["macro", "hooks"], default-features = false }
+tokio = { version = "1.0", features = ["full"] }
