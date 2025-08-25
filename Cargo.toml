@@ -7,3 +7,7 @@ edition = "2021"
 freya = "0.3"
 dioxus = { version = "0.6", features = ["macro", "hooks"], default-features = false }
 tokio = { version = "1.0", features = ["full"] }
+
+[package.metadata.bundle]
+name = "gtypist-freya-gui"
+identifier = "com.example.gtypist-freya-gui"

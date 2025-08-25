@@ -1,0 +1,138 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+  build-windows:
+    name: Build Windows Executable
+    needs: create-release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Build release
+        run: |
+          cargo build --release
+
+      - name: Package executable
+        run: |
+          mkdir gtypist-freya-gui-windows
+          copy target\release\gtypist-freya-gui.exe gtypist-freya-gui-windows\
+          copy -Recurse lessons gtypist-freya-gui-windows\
+          Compress-Archive -Path gtypist-freya-gui-windows -DestinationPath gtypist-freya-gui-windows.zip
+
+      - name: Upload Windows release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./gtypist-freya-gui-windows.zip
+          asset_name: gtypist-freya-gui-windows.zip
+          asset_content_type: application/zip
+
+  build-linux:
+    name: Build Linux Executable
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Build release
+        run: |
+          cargo build --release
+
+      - name: Package executable
+        run: |
+          mkdir gtypist-freya-gui-linux
+          cp target/release/gtypist-freya-gui gtypist-freya-gui-linux/
+          cp -r lessons gtypist-freya-gui-linux/
+          zip -r gtypist-freya-gui-linux.zip gtypist-freya-gui-linux
+
+      - name: Upload Linux release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./gtypist-freya-gui-linux.zip
+          asset_name: gtypist-freya-gui-linux.zip
+          asset_content_type: application/zip
+
+  build-macos:
+    name: Build macOS Executable
+    needs: create-release
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Build release
+        run: |
+          cargo build --release
+
+      - name: Package executable
+        run: |
+          mkdir gtypist-freya-gui-macos
+          cp target/release/gtypist-freya-gui gtypist-freya-gui-macos/
+          cp -r lessons gtypist-freya-gui-macos/
+          zip -r gtypist-freya-gui-macos.zip gtypist-freya-gui-macos
+
+      - name: Upload macOS release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./gtypist-freya-gui-macos.zip
+          asset_name: gtypist-freya-gui-macos.zip
+          asset_content_type: application/zip
